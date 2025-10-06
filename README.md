@@ -21,7 +21,7 @@ The rule is that every command that you do should be prefixed by `./run`. E.g.
 
 Try this and see what it does
 ```bash
-./run ./scripts/example.py
+./run ./scripts/examples/example.py
 ```
 
 Then look at the script
