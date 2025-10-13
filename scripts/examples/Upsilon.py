@@ -3,6 +3,11 @@
 import uproot
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
+
+def ResFit(x,total,mean,sd,A,B):
+    term = -0.5*((x-mean)**2 / sd**2)
+    return A*np.exp(B*x) + total / (np.sqrt(2*np.pi)*sd) * np.exp(term)
 
 def main():
     DATADIR="/storage/epp2/phshgg/Public/ew_analyses/run3_tuples/11/"
@@ -18,11 +23,22 @@ def main():
     tot_PZ = mup_P[2] + mum_P[2]
     tot_P = np.sqrt(tot_PX**2+tot_PY**2+tot_PZ**2)
     mass = np.sqrt(tot_E**2 - tot_P**2)
-    print(mass)
-    dataHist,bins,_ = plt.hist(mass,bins=100,range=(9100,9600),histtype='step',label="Upsilon mass",density=True)
+
+    massHist,bins,_ = plt.hist(mass,bins=100,range=(9100,9600),histtype='step',label="Upsilon mass",density=True)
+    binwidth = bins[1] - bins[0]
+    binlist = [bins[0]+0.5*binwidth]
+    for i in range(1,(len(bins)-1)):
+        binlist.append(binlist[-1]+binwidth)
+    bincenters = np.array(binlist)
+    d_y = np.sqrt(massHist)
+    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[100,9450,10,2,0.005],bounds=([0,9400,0,0,0],[100,9500,80,1e3,1e3]),sigma=d_y,absolute_sigma=True)
+    print(fitParam)
+    model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
+    plt.plot(bincenters,model)
+
     plt.legend()
     plt.xlabel("Mass / MeV")
-    plt.ylabel("Frequency")
+    plt.ylabel("Frequency Density")
     plt.title("Upsilon invariant mass")
     plt.savefig("Upsilon_mass.pdf")
     plt.clf()
