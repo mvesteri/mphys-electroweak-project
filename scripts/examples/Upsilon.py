@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 import awkward as ak
 
-def ResFit(x,total,mean,sd,A,B,D):
+def ResFit(x,total,mean,sd,A,B):
     term = -0.5*((x-mean)**2 / sd**2)
-    return A*np.exp(-B*x) + total / (np.sqrt(2*np.pi)*sd) * np.exp(term) +D
+    return A*np.exp(-B*x) + total / (np.sqrt(2*np.pi)*sd) * np.exp(term) #+D
 
 def main():
     DATADIR="/storage/epp2/phshgg/Public/MPhysProject_2025_2026/tuples/0/"
@@ -36,18 +36,18 @@ def main():
     mass = np.sqrt(tot_E**2 - tot_P**2)
     
     massHist,bins,_ = plt.hist(mass,bins=100,range=(9.200,9.750),histtype='step',label="Upsilon mass",density=True)
-    '''
+    
     binwidth = bins[1] - bins[0]
     binlist = [bins[0]+0.5*binwidth]
     for i in range(1,(len(bins)-1)):
         binlist.append(binlist[-1]+binwidth)
     bincenters = np.array(binlist)
     d_y = np.sqrt(massHist)
-    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[0.5,9.450,20,0.8,0.001,0],bounds=([0,9.400,18,0,0,-0.03],[30,9.500,100,10,1e3,0.03]),sigma=d_y,absolute_sigma=True)
+    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[0.5,9.450,10,1,0.001],bounds=([1e-05,9.400,0,0,0],[30,9.500,100,100,1e3]),sigma=d_y,absolute_sigma=True)
     print(fitParam)
-    model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4],fitParam[5])
+    model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
     plt.plot(bincenters,model)
-    '''
+    
     plt.legend()
     plt.xlabel("Mass / GeV")
     plt.ylabel("Frequency Density")
