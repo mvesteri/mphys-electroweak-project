@@ -12,63 +12,44 @@ def ResFit(x,total,mean,sd,A,B,D):
 
 def main():
     DATADIR="/storage/epp2/phshgg/Public/MPhysProject_2025_2026/tuples/0/"
-    MUON_MASS = 105.7
+    MUON_MASS = 0.1057
     with uproot.open(f"{DATADIR}/DecayTree__U1S__DATA__d13600GeV_24c4.root:DecayTree") as t:
         #data = t.arrays(["mup_PX","mup_PY","mup_PZ","mum_PX","mum_PY","mum_PZ"],library="np")
         data = t.arrays(["mup_P","mup_pt","mup_eta","mup_phi","mum_P","mum_pt","mum_eta","mum_phi"],library="np")
 
-    mask = ((data["mup_eta"] < 10)&(data["mum_eta"] < 10))
-    for var in data:
-        data[var] = (data[var])[mask]
-
     data["mup_PX"] = data["mup_pt"]*np.cos(data["mup_phi"])
     data["mup_PY"] = data["mup_pt"]*np.sin(data["mup_phi"])
     data["mup_PZ"] = data["mup_pt"]*np.sinh(data["mup_eta"])
+    data["mup_P"] = data["mup_pt"]*np.cosh(data["mup_eta"])
     data["mum_PX"] = data["mum_pt"]*np.cos(data["mum_phi"])
     data["mum_PY"] = data["mum_pt"]*np.sin(data["mum_phi"])
     data["mum_PZ"] = data["mum_pt"]*np.sinh(data["mum_eta"])
-
-    mask = (
-    np.isfinite(data["mup_PX"]) &
-    np.isfinite(data["mup_PY"]) &
-    np.isfinite(data["mup_PZ"]) &
-    np.isfinite(data["mum_PX"]) &
-    np.isfinite(data["mum_PY"]) &
-    np.isfinite(data["mum_PZ"]) 
-    )
-
-    print(len(data["mum_PZ"])) #4079241
-
-    for var in data:
-        data[var] = (data[var])[mask]
-
-    data[var] = (data[var])[mask]
-
-    print(len(data["mum_PZ"])) #4079241
+    data["mum_P"] = data["mum_pt"]*np.cosh(data["mum_eta"])
 
     mup_P,mum_P = np.array([data["mup_PX"],data["mup_PY"],data["mup_PZ"]]),np.array([data["mum_PX"],data["mum_PY"],data["mum_PZ"]])
-    mup_E,mum_E = np.sqrt(mup_P[0]**2+mup_P[1]**2+mup_P[2]**2+MUON_MASS**2),np.sqrt(mum_P[0]**2+mum_P[1]**2+mum_P[2]**2+MUON_MASS**2)
+    mup_E,mum_E = np.sqrt(data["mup_P"]**2+MUON_MASS**2),np.sqrt(data["mum_P"]**2+MUON_MASS**2)
     tot_E = mup_E + mum_E
     tot_PX = mup_P[0] + mum_P[0]
     tot_PY = mup_P[1] + mum_P[1]
     tot_PZ = mup_P[2] + mum_P[2]
     tot_P = np.sqrt(tot_PX**2+tot_PY**2+tot_PZ**2)
     mass = np.sqrt(tot_E**2 - tot_P**2)
-
-    massHist,bins,_ = plt.hist(mass,bins=100,range=(9200,9750),histtype='step',label="Upsilon mass",density=True)
+    
+    massHist,bins,_ = plt.hist(mass,bins=100,range=(9.200,9.750),histtype='step',label="Upsilon mass",density=True)
+    '''
     binwidth = bins[1] - bins[0]
     binlist = [bins[0]+0.5*binwidth]
     for i in range(1,(len(bins)-1)):
         binlist.append(binlist[-1]+binwidth)
     bincenters = np.array(binlist)
     d_y = np.sqrt(massHist)
-    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[0.5,9450,20,0.8,0.001,0],bounds=([0,9400,18,0,0,-0.03],[30,9500,100,10,1e3,0.03]),sigma=d_y,absolute_sigma=True)
+    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[0.5,9.450,20,0.8,0.001,0],bounds=([0,9.400,18,0,0,-0.03],[30,9.500,100,10,1e3,0.03]),sigma=d_y,absolute_sigma=True)
     print(fitParam)
     model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4],fitParam[5])
     plt.plot(bincenters,model)
-
+    '''
     plt.legend()
-    plt.xlabel("Mass / MeV")
+    plt.xlabel("Mass / GeV")
     plt.ylabel("Frequency Density")
     plt.title("Upsilon invariant mass")
     plt.savefig("Upsilon_mass.pdf")
