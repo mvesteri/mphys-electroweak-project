@@ -5,10 +5,15 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 import argparse
+from scipy.stats import crystalball
 
 def ResFit(x,total,mean,sd,A,B):
     term = -0.5*((x-mean)**2 / sd**2)
     return A*np.exp(-B*x) + total / (np.sqrt(2*np.pi)*sd) * np.exp(term) #+D
+
+    #from scipy.stats documentation crystallball(x,beta,m): x = (x-mean)/sd
+def CrystalBallFit(x,beta,m,loc,scale):
+    return crystalball.pdf(x,beta,m,loc=loc,scale=scale)
 
 def main():
 
@@ -54,11 +59,14 @@ def main():
     for i in range(1,(len(bins)-1)):
         binlist.append(binlist[-1]+binwidth)
     bincenters = np.array(binlist)
-    d_y = np.sqrt(massHist)
-    fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[1.0, 9.46, 0.04, 0.5, 0.001],bounds=([0, 9.4, 0.018, 0, 0],[30.0, 9.5, 0.1, 10.0, 1e3]),sigma=d_y,absolute_sigma=True,maxfev=10000)
+    #d_y = np.sqrt(massHist)
+    #fitParam,_ = curve_fit(ResFit,bincenters,massHist,p0=[1.0, 9.46, 0.04, 0.5, 0.001],bounds=([0, 9.4, 0.018, 0, 0],[30.0, 9.5, 0.1, 10.0, 1e3]),maxfev=10000)
+    fitParam = (curve_fit(CrystalBallFit,bincenters,massHist,p0=[1.75,2.5,9.45,1e-3],bounds=([0,0,9.4,1e-5],[10,5,9.5,2]),maxfev=10000))[0]
     print(fitParam)
-    model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
-    plt.plot(bincenters,model)
+    #model = ResFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
+    #plt.plot(bincenters,model,label=r'$ Ae^{-bx}+\mathrm{Gauss}(T,\bar{x},\sigma) $')
+    model = CrystalBallFit(bincenters,fitParam[0],fitParam[1],fitParam[2],fitParam[3])
+    plt.plot(bincenters,model,label="Crystall Ball function")
     
     plt.legend()
     plt.xlabel("Mass / GeV")
