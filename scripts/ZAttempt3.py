@@ -8,9 +8,16 @@ DATAIR="/storage/epp2/phshgg/Public/MPhysProject_2025_2026/tuples/1/"
 with uproot.open(f"{DATAIR}/DecayTree__Z__Z__d13600GeV_24c4.root:DecayTree") as t:
 
     #momentasim = t.arrays(["mup_PX","mup_PY","mup_PZ","mum_PX" ,"mum_PY" ,"mum_PZ"],library="np")
-    datam=t.arrays(["mum_eta","mum_phi","mum_pt","mup_eta" ,"mup_phi" ,"mup_pt","true_boson_mass"],library="np")  #i ahve ztrue and i ahve z reconstructed
+    simdatam=t.arrays(["mum_eta","mum_phi","mum_pt","mup_eta" ,"mup_phi" ,"mup_pt","true_boson_mass"],library="np")  #i ahve ztrue and i ahve z reconstructed simulation
     
-    tmass=datam["true_boson_mass"]
+    tmass=simdatam["true_boson_mass"]
+
+
+with uproot.open(f"{DATAIR}/DecayTree__Z__DATA__d13600GeV_24c4.root:DecayTree") as tt:
+
+    #momentasim = t.arrays(["mup_PX","mup_PY","mup_PZ","mum_PX" ,"mum_PY" ,"mum_PZ"],library="np")
+    datam=tt.arrays(["mum_eta","mum_phi","mum_pt","mup_eta" ,"mup_phi" ,"mup_pt"],library="np")
+
 
 def conaeq(reconmass):
     mpe=reconmass["mup_eta"]
@@ -42,14 +49,19 @@ def fiteq(x,a,b,m,w,scale):
     f= ((k/((x**2-m**2)**2+(m**2)*w**2))*scale  + a*np.exp(b*x))  # i can just do this manually
     return f
 
-def plot(tmass,datam):
-    remassHist,rebinn,_=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),label="Z-reconstructed",density=True,linewidth=1)
-    trmassHist,binn,_=plt.hist(tmass, bins=150, histtype="step",range=(70,110),label="Z-true",density=True,linewidth=1) #for true mass
+def quad(da,a,b):
+    f=a*da**2 +b
+    return f
+
+def TrueZfit_allplots(tmass,simdatam,datam):
+    dataHist,databinn,_d=plt.hist(conaeq(datam), bins=np.linspace(80.0,100.0,50), histtype="step",label="Z-data-reconstructed",density=True,linewidth=1) #the data recosntuction data
+    remassHist,rebinn,_s=plt.hist(conaeq(simdatam), bins=np.linspace(80.0,100.0,50), histtype="step",label="Z-sim reconstructed",density=True,linewidth=1) #for recosntructed simulation 
+    trmassHist,binn,_t=plt.hist(tmass, bins=np.linspace(80.0,100.0,50), histtype="step",label="Z-true",density=True,linewidth=1) #for true mass
     centers=0.5*(binn[1:]+binn[:-1])
     w=3
     m=91.1876
-    fitParam,_ = curve_fit(fiteq,centers,trmassHist,p0=[5,-0.7,m,w,0.4],bounds=([0.0,-1.0,60,0,0],[100.0,0,120,10,1]),maxfev=10000)
-    print(fitParam)
+    fitParam,_tt = curve_fit(fiteq,centers,trmassHist,p0=[5,-0.7,m,w,0.4],bounds=([0.0,-1.0,60,0,0],[100.0,0,120,10,1]),maxfev=10000)# this uses the true mass
+    #print(fitParam)
     model = fiteq(centers,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
     plt.plot(centers,model)
     plt.title("Z-true fit+reconstructed")
@@ -59,30 +71,82 @@ def plot(tmass,datam):
     plt.savefig("Z-true fit +reconstructed.pdf")
     plt.clf()
 
-    plt.figure()  #now making a grpah with a histogram with woeghtings applied
-    ratio=fiteq(tmass,fitParam[0],fitParam[1],85,fitParam[3],fitParam[4])/fiteq(tmass,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
-    massHistweights,binnweights,_weights=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,100),weights=ratio,label="Z-reconstructed weighted",density=True,linewidth=1) #for reconstructed mass with wieghts
-    remassHist,rebinn,_=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),label="Z-reconstructed",density=True,linewidth=1)
-    plt.plot(centers,model)
-    plt.title("Z-reconstucted weighted target 85")
+def Zdata_with_fit(tmass,simdatam,datam):
+    dataHist,databinn = np.histogram(conaeq(datam), bins=np.linspace(80.0,100.0,50),density=True)
+    
+    centersdat=0.5*(databinn[1:]+databinn[:-1])
+
+    plt.scatter(centersdat,dataHist,label="Z-data")
+    plt.title("Z-data with fit")
     plt.xlabel("Mass_Gev")
     plt.ylabel("Frequency Density")
     plt.legend(loc='upper right')
-    plt.savefig("Z-reconstucted weighted.pdf")
+    plt.savefig("Z-data with fit.pdf")
     plt.clf()
 
-    plt.figure()
-    remassHist,rebinn,_=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),label="Z-reconstructed",density=True,linewidth=1)
+def plot(tmass,simdatam,datam):
+    dataHist,databinn,_d=plt.hist(conaeq(datam), bins=np.linspace(80.0,100.0,50), histtype="step",label="Z-data-reconstructed",linewidth=1) #the data recosntuction data #for recosntructed simulation 
+    trmassHist,binn,_t=plt.hist(tmass, bins=np.linspace(80.0,100.0,50), histtype="step",label="Z-true",density=True,linewidth=1) #for true mass
+    centers=0.5*(binn[1:]+binn[:-1])
+    w=3
+    m=91.1876
+    fitParam,_tt = curve_fit(fiteq,centers,trmassHist,p0=[5,-0.7,m,w,0.4],bounds=([0.0,-1.0,60,0,0],[100.0,0,120,10,1]),maxfev=10000)# this uses the true mass
+    print(fitParam)
+    model = fiteq(centers,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
+    # ratio only has the t mass in it, the hsitogram suses this wieghtign witht the recosntructed in it
+    #scaling the hisogram
+
+
     ratio90=fiteq(tmass,fitParam[0],fitParam[1],90,fitParam[3],fitParam[4])/fiteq(tmass,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
-    massHistweights90,binnweights90,_weights90=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),weights=ratio90,label="Z-reconstructed weighted 90",density=True,linewidth=1) #for reconstructed mass with wieghts
+     #for reconstructed sim mass with wieght
+    simmassHistweights90,binnweights90 = np.histogram(conaeq(simdatam), bins=np.linspace(80.0,100.0,50), weights=ratio90)
     ratio91=fiteq(tmass,fitParam[0],fitParam[1],91,fitParam[3],fitParam[4])/fiteq(tmass,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
-    massHistweights91,binnweights91,_weights91=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),weights=ratio91,label="Z-reconstructed weighted 91",density=True,linewidth=1)
+    simmassHistweights91,binnweights91 = np.histogram(conaeq(simdatam), bins=np.linspace(80.0,100.0,50), weights=ratio91)
+
     ratio92=fiteq(tmass,fitParam[0],fitParam[1],92,fitParam[3],fitParam[4])/fiteq(tmass,fitParam[0],fitParam[1],fitParam[2],fitParam[3],fitParam[4])
-    massHistweights92,binnweights92,_weights92=plt.hist(conaeq(datam), bins=150, histtype="step",range=(70,110),weights=ratio92,label="Z-reconstructed weighted 92",density=True,linewidth=1)
-    plt.title("Z-reconstucted weights")
+    simmassHistweights92,binnweights92 = np.histogram(conaeq(simdatam), bins=np.linspace(80.0,100.0,50), weights=ratio92)
+
+    sim_scale_factor90 = np.sum(dataHist) / np.sum(simmassHistweights90) 
+    simHist_scaled90 = simmassHistweights90 * sim_scale_factor90
+    sim_scale_factor91= np.sum(dataHist) / np.sum(simmassHistweights91) 
+    simHist_scaled91 = simmassHistweights91 * sim_scale_factor91
+    sim_scale_factor92 = np.sum(dataHist) / np.sum(simmassHistweights92) 
+    simHist_scaled92 = simmassHistweights92 * sim_scale_factor92
+    plt.plot(centers, simHist_scaled90, '-', linewidth=2, label='scaled-weighted 90 simulation')
+    plt.plot(centers, simHist_scaled91, '-', linewidth=2, label='scaled-weighted 91 simulation')
+    plt.plot(centers, simHist_scaled92, '-', linewidth=2, label='scaled-weighted 92 simulation')
+    plt.title("Z-reconstucted weighted sim")
     plt.xlabel("Mass_Gev")
     plt.ylabel("Frequency Density")
     plt.legend(loc='upper right')
     plt.savefig("weights graph.pdf")
     plt.clf()
-plot(tmass,datam)
+    plt.figure() # now for the chi ^2 plot of from the last 3  // now this will ahve to be recosntucted daat from real life not sim
+
+    chi90=np.sum(((dataHist-simHist_scaled90)**2)/dataHist)
+    chi91=np.sum(((dataHist-simHist_scaled91)**2)/dataHist)
+    chi92=np.sum(((dataHist-simHist_scaled92)**2)/dataHist)
+    plt.title("Z-chi")
+    y=np.array([chi90,chi91,chi92])
+    print(y)
+    x=np.array([90,91,92])
+    plt.xlabel("target Zmass")
+    plt.ylabel("Chi^2")
+
+    plt.scatter(x,y)
+    qfit = np.polyfit(x, y, deg=2)
+    functionpfit = np.poly1d(qfit) 
+    print(qfit)
+    xx = np.linspace((89), (93), 300)
+    plt.plot(xx,functionpfit(xx))
+    plt.savefig("z-chi.pdf")
+    min=-qfit[1]/(2*qfit[0])
+    print("min at", min)
+    plt.clf()
+
+    plt.figure()
+
+
+plot(tmass,simdatam,datam)
+TrueZfit_allplots(tmass,simdatam,datam)
+Zdata_with_fit(tmass,simdatam,datam)
