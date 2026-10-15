@@ -1,3 +1,5 @@
+# MPhys project 2026-2027
+
 ## Preliminaries and environments
 
 For access to the data files we need to be in the `epp` group.
