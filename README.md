@@ -1,4 +1,4 @@
-## Preliminaries and environments
+hello
 
 For access to the data files we need to be in the `epp` group.
 Type the following to see if `epp` appears in the list. If not we need to contact the system admins (via a bugzilla) to change this.
